@@ -36,9 +36,6 @@ class Employee(models.Model):                                           # child 
 
 
 
-
-
-
 class Singer(models.Model):
     name=models.CharField(max_length=100)
     gender=models.CharField(max_length=100)
