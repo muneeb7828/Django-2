@@ -8,10 +8,12 @@ from .models import *
 from .serializer import *
 from django.contrib.auth.models import User                 # ye jo admin pe user he vo import kiya he
 from django.contrib.auth import authenticate,login,logout   # ye function user ko authenticate karne ke liye aur login or logout karne ke liye hota he
+from rest_framework_simplejwt.tokens import RefreshToken    # isme ek access token attribute hota he jo tab generate hota he jab bhi login karte he
+
+
 
 def home(request):
     return render(request,'index.html')
-
 
 
 @api_view(['GET','POST','PUT','PATCH','DELETE',"OPTIONS"])
@@ -177,10 +179,11 @@ def login_user(request):
 
 @api_view(['POST'])
 def logout_user(request):
-    print(request.POST,'muneeebssssss')
-    logout(request)                                                # is method se logout ho jate he
-    return Response({'message':'logout successful'})
-
+    print(request.data,'muneeebssssss')
+    if User.objects.filter(username=request.data["usernam"]):
+      logout(request)                                                # is method se logout ho jate he
+      return Response({'message':'logout successful'})
+    
 
 # create crud of User
 
@@ -226,16 +229,38 @@ def User_database(request,username=None):
 
         return Response(serializers.data)
 
+# JWT authentication
+
+@api_view(['POST'])
+def jwt_login_user(request):
+    user=request.data.get('user')
+    pswd=request.data.get('pswd')
+
+    user = authenticate(username=user,password=pswd)             # ye authenticate function ye User se connected he ye kya karta he ki agar username aur password mil jata he to ye vo object return kar deta he fir us object ke sath kuch bhi kar sakte he
+
+    if user is not None:
+        refresh = RefreshToken.for_user(user)                    # ye user ke liye token generate karta he 
+        return Response({
+            'message':'login successfully',
+            'access':str(refresh.access_token),                  # isme jo access token generate hua he vo ajata he
+            'refresh':str(refresh)                               # isme pura refresh object ajata he
+            })
+    return Response({'message':'invalid credential'})
+   
+
+@api_view(['POST'])
+def jwt_logout_user(request):
+    try:
+        refresh_token = request.data.get('refresh')                #
+        token = RefreshToken(refresh_token)
+        token.blacklist()                                          # ye logout kar deta he
+        return Response({'message': 'Logged out successfully'})
+    except Exception as e:
+        return Response({'message': 'Invalid refresh token'})
 
 
 
-
-
-
-
-
-
-
+ 
 
 class SingerViewSet(viewsets.ModelViewSet):
     queryset=Singer.objects.all()
